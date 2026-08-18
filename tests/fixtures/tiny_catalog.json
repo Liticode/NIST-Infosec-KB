@@ -1,0 +1,42 @@
+{
+  "catalog": {
+    "metadata": {"title": "Tiny 800-53 fixture", "version": "5.2.0"},
+    "groups": [
+      {
+        "id": "ac",
+        "title": "Access Control",
+        "controls": [
+          {
+            "id": "ac-2",
+            "title": "Account Management",
+            "params": [{"id": "ac-02_odp.01", "label": "approval conditions"}],
+            "props": [{"name": "label", "value": "AC-2"}],
+            "links": [{"href": "#ac-3", "rel": "related"}],
+            "parts": [
+              {
+                "name": "statement",
+                "parts": [
+                  {"name": "item", "prose": "Define and document the types of accounts allowed."},
+                  {"name": "item", "prose": "Require {{ insert: param, ac-02_odp.01 }} for group membership."}
+                ]
+              },
+              {"name": "guidance", "prose": "Examples of system account types include individual and service."},
+              {
+                "name": "assessment-objective",
+                "parts": [
+                  {"name": "assessment-objective", "prose": "account types are defined and documented"}
+                ]
+              },
+              {
+                "name": "assessment-method",
+                "parts": [
+                  {"name": "assessment-objects", "prose": "Access control policy; account management procedures"}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

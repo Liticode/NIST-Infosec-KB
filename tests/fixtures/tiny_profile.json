@@ -1,0 +1,11 @@
+{
+  "profile": {
+    "metadata": {"title": "Tiny moderate baseline"},
+    "imports": [
+      {
+        "href": "#catalog",
+        "include-controls": [{"with-ids": ["ac-2", "ac-3"]}]
+      }
+    ]
+  }
+}

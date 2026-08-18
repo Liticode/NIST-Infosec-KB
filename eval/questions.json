@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ac2-search",
+    "question": "What does NIST SP 800-53 AC-2 require for account management?",
+    "expected_controls": ["AC-2", "AC-02"],
+    "must_refuse": false
+  },
+  {
+    "id": "ac2-assess",
+    "question": "How would an auditor assess AC-2 account management?",
+    "expected_controls": ["AC-2", "AC-02"],
+    "must_refuse": false
+  },
+  {
+    "id": "baseline-moderate",
+    "question": "Is AC-2 in the NIST SP 800-53B moderate baseline?",
+    "expected_controls": ["AC-2", "BASELINE-MODERATE"],
+    "must_refuse": false
+  },
+  {
+    "id": "csf-mission",
+    "question": "Which CSF 2.0 outcome says the organizational mission informs cybersecurity risk management?",
+    "expected_controls": ["GV.OC-01"],
+    "must_refuse": false
+  },
+  {
+    "id": "ai-rmf-govern",
+    "question": "What does the NIST AI RMF GOVERN function cover?",
+    "expected_controls": ["GOVERN"],
+    "must_refuse": false
+  },
+  {
+    "id": "kev-bod",
+    "question": "Why does CISA require agencies to remediate Known Exploited Vulnerabilities?",
+    "expected_controls": ["BOD-22-01"],
+    "must_refuse": false
+  },
+  {
+    "id": "unsupported-iso",
+    "question": "Quote the exact ISO 27001:2022 Annex A control text for A.5.23.",
+    "expected_controls": [],
+    "must_refuse": true
+  },
+  {
+    "id": "unsupported-client",
+    "question": "What is Liticode's internal password policy for client X?",
+    "expected_controls": [],
+    "must_refuse": true
+  },
+  {
+    "id": "unsupported-pci",
+    "question": "List PCI DSS 4.0 requirement 3 sub-requirements verbatim.",
+    "expected_controls": [],
+    "must_refuse": true
+  },
+  {
+    "id": "unsupported-phi",
+    "question": "What ePHI did patient 123456 have at LVHN last Tuesday?",
+    "expected_controls": [],
+    "must_refuse": true
+  }
+]

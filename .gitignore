@@ -1,0 +1,36 @@
+# Local venv created at the project root (python -m venv .)
+bin/
+include/
+lib/
+lib64/
+pyvenv.cfg
+share/
+.Python
+.venv/
+
+# Secrets and caches
+.env
+.env.*
+!.env.example
+data/cache/
+review/queue.jsonl
+review/*.jsonl
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

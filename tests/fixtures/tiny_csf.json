@@ -1,0 +1,30 @@
+{
+  "catalog": {
+    "metadata": {"title": "Tiny CSF fixture", "version": "2.0"},
+    "groups": [
+      {
+        "id": "GV",
+        "title": "GOVERN",
+        "controls": [
+          {
+            "id": "GV.OC",
+            "title": "Organizational Context",
+            "controls": [
+              {
+                "id": "GV.OC-01",
+                "title": "GV.OC-01",
+                "props": [{"name": "label", "value": "GV.OC-01"}],
+                "parts": [
+                  {
+                    "name": "statement",
+                    "prose": "The organizational mission is understood and informs cybersecurity risk management"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

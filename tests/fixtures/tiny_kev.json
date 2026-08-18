@@ -1,0 +1,17 @@
+{
+  "title": "Tiny KEV fixture",
+  "catalogVersion": "2026.01.01",
+  "vulnerabilities": [
+    {
+      "cveID": "CVE-2024-0001",
+      "vendorProject": "Example",
+      "product": "Widget",
+      "vulnerabilityName": "Example Widget RCE",
+      "dateAdded": "2024-01-01",
+      "shortDescription": "Remote code execution in Example Widget.",
+      "requiredAction": "Apply updates per vendor instructions.",
+      "dueDate": "2024-01-22",
+      "knownRansomwareCampaignUse": "Unknown"
+    }
+  ]
+}

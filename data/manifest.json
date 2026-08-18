@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "note": "Allowlisted official U.S. government sources only. Ingest refuses any other URL.",
+  "sources": [
+    {
+      "id": "csf-2",
+      "wave": 1,
+      "parser": "oscal_catalog",
+      "namespace": "csf-2",
+      "framework": "nist-csf",
+      "version": "2.0",
+      "kind": "outcome",
+      "url": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/CSF/v2.0/json/NIST_CSF_v2.0_catalog-min.json",
+      "source_url": "https://www.nist.gov/cyberframework",
+      "license": "U.S. government work; 17 U.S.C. § 105 / NIST public domain notice"
+    },
+    {
+      "id": "sp800-53-r5",
+      "wave": 1,
+      "parser": "oscal_catalog",
+      "namespace": "sp800-53-r5",
+      "framework": "sp800-53",
+      "version": "5.2.0",
+      "kind": "statement",
+      "also_emit_assessment_namespace": "sp800-53a",
+      "url": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog-min.json",
+      "source_url": "https://csrc.nist.gov/pubs/sp/800/53/r5/upd1/final",
+      "license": "U.S. government work; 17 U.S.C. § 105 / NIST public domain notice"
+    },
+    {
+      "id": "sp800-53b-low",
+      "wave": 1,
+      "parser": "oscal_baseline",
+      "namespace": "sp800-53b",
+      "framework": "sp800-53b",
+      "version": "5.2.0",
+      "baseline": "low",
+      "url": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_LOW-baseline_profile.json",
+      "source_url": "https://csrc.nist.gov/pubs/sp/800/53b/final",
+      "license": "U.S. government work; 17 U.S.C. § 105 / NIST public domain notice"
+    },
+    {
+      "id": "sp800-53b-moderate",
+      "wave": 1,
+      "parser": "oscal_baseline",
+      "namespace": "sp800-53b",
+      "framework": "sp800-53b",
+      "version": "5.2.0",
+      "baseline": "moderate",
+      "url": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_MODERATE-baseline_profile.json",
+      "source_url": "https://csrc.nist.gov/pubs/sp/800/53b/final",
+      "license": "U.S. government work; 17 U.S.C. § 105 / NIST public domain notice"
+    },
+    {
+      "id": "sp800-53b-high",
+      "wave": 1,
+      "parser": "oscal_baseline",
+      "namespace": "sp800-53b",
+      "framework": "sp800-53b",
+      "version": "5.2.0",
+      "baseline": "high",
+      "url": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_HIGH-baseline_profile.json",
+      "source_url": "https://csrc.nist.gov/pubs/sp/800/53b/final",
+      "license": "U.S. government work; 17 U.S.C. § 105 / NIST public domain notice"
+    },
+    {
+      "id": "sp800-53b-privacy",
+      "wave": 1,
+      "parser": "oscal_baseline",
+      "namespace": "sp800-53b",
+      "framework": "sp800-53b",
+      "version": "5.2.0",
+      "baseline": "privacy",
+      "url": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_PRIVACY-baseline_profile.json",
+      "source_url": "https://csrc.nist.gov/pubs/sp/800/53b/final",
+      "license": "U.S. government work; 17 U.S.C. § 105 / NIST public domain notice"
+    },
+    {
+      "id": "ai-rmf",
+      "wave": 1,
+      "parser": "ai_rmf_core",
+      "namespace": "ai-rmf",
+      "framework": "ai-rmf",
+      "version": "1.0",
+      "kind": "outcome",
+      "url": "local:data/ai_rmf_core.json",
+      "source_url": "https://doi.org/10.6028/NIST.AI.100-1",
+      "license": "U.S. government work; 17 U.S.C. § 105. Titles taken from NIST AI RMF 1.0."
+    },
+    {
+      "id": "cisa-kev",
+      "wave": 1,
+      "parser": "cisa_kev",
+      "namespace": "cisa-kev",
+      "framework": "cisa-kev",
+      "version": "current",
+      "kind": "kev",
+      "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "source_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "license": "U.S. government work; see CISA KEV license file"
+    },
+    {
+      "id": "bod-22-01",
+      "wave": 1,
+      "parser": "html_directive",
+      "namespace": "bod-22-01",
+      "framework": "cisa-bod",
+      "version": "22-01",
+      "kind": "directive",
+      "url": "https://www.cisa.gov/news-events/directives/bod-22-01-reducing-significant-risk-known-exploited-vulnerabilities",
+      "source_url": "https://www.cisa.gov/news-events/directives/bod-22-01-reducing-significant-risk-known-exploited-vulnerabilities",
+      "license": "U.S. government work; 17 U.S.C. § 105"
+    }
+  ]
+}
