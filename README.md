@@ -90,7 +90,7 @@ python -m atlas ingest --dry-run  # download/normalize catalogs; do not upsert
 python -m atlas query "How would an auditor assess AC-2 account management?"
 ```
 
-A good result includes `citations` (record IDs) and `refused: false`. A question this corpus does not cover (ISO 27001, PCI, a named patient’s ePHI, a client policy) should come back `refused: true`.
+A good result includes `citations` (record IDs) and `refused: false`. Refusal means retrieved passages do not support the question (wrong control/framework, out-of-scope cue such as ISO 27001 / PCI / a named patient ID, or answer text that is not in the citations). Extractive mode will not quote an unrelated hit. `python -m atlas eval` fails if expected refusals are missed.
 
 ### 4. Optional: live Pinecone + Grok
 

@@ -50,7 +50,7 @@ Logical isolation inside one serverless index (`public-control-atlas`, AWS us-ea
 
 ## Answer contract
 
-Grok sees only retrieved passages. Output must be JSON. `validate_answer` drops any citation that is not in the retrieved set and refuses if none remain. Review records store a question hash, not the question text.
+Grok sees only retrieved passages that lexically support the question (control IDs, out-of-scope cues, token overlap). Output must be JSON. `validate_answer` drops citations that are not in that set, refuses invented identifiers and lightly-overlapping answer text, and extractive mode refuses when the top hit is about something else. `atlas eval` fails if `must_refuse` items are answered. Review records store a question hash, not the question text.
 
 ## Offline path
 

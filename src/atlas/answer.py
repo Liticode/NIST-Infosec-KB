@@ -14,8 +14,66 @@ SYSTEM = """You answer only from the retrieved public catalog passages.
 Return JSON with keys: answer (string), citations (array of retrieved record ids), confidence (0-1 number), refusal (boolean), reason (string).
 If the passages do not contain enough evidence, set refusal true and do not invent controls, baselines, or CVEs.
 Every citation must be one of the provided record ids. Quote control IDs that appear in the passages.
+Do not answer from a passage that is about a different control, framework, person, or dataset than the question.
 This is not legal, audit, or compliance advice.
 """
+
+_TOKEN = re.compile(r"[a-z0-9][a-z0-9._()-]{0,}", re.I)
+_STOP = frozenset(
+    {
+        "a",
+        "an",
+        "and",
+        "are",
+        "as",
+        "at",
+        "be",
+        "by",
+        "does",
+        "for",
+        "from",
+        "how",
+        "in",
+        "is",
+        "of",
+        "on",
+        "or",
+        "the",
+        "to",
+        "what",
+        "which",
+        "why",
+        "would",
+        "with",
+    }
+)
+# Distinctive IDs a question might name (AC-2, GV.OC-01, 03.01.01, PO.1, 1.A, 164.308, A.5.23, CVE-…).
+_CONTROL_ID = re.compile(
+    r"\b(?:"
+    r"[a-z]{1,4}-\d+(?:\.\d+)?(?:\(\d+\))?"
+    r"|gv\.[a-z]{2}-\d{2}"
+    r"|po\.\d(?:\.\d)?"
+    r"|03\.\d{2}\.\d{2}"
+    r"|164\.\d{3}(?:\([^)]+\))*"
+    r"|cve-\d{4}-\d+"
+    r"|bod-\d{2}-\d{2}"
+    r"|a\.\d+\.\d+"
+    r"|[1-6]\.[a-z]"
+    r")\b",
+    re.I,
+)
+# Cues that this corpus is not supposed to answer unless the same string is in a passage.
+_OUT_OF_SCOPE = (
+    re.compile(r"iso\s*27001", re.I),
+    re.compile(r"pci\s*dss", re.I),
+    re.compile(r"hitrust", re.I),
+    re.compile(r"patient\s+\d+", re.I),
+    re.compile(r"internal (?:password )?policy", re.I),
+    re.compile(r"client [x0-9][a-z0-9_-]{0,20}", re.I),
+)
+
+MIN_QUESTION_OVERLAP = 0.28
+MAX_UNGROUNDED = 0.55
 
 
 def _passages(hits: list[Hit]) -> str:
@@ -36,7 +94,84 @@ def parse_model_json(raw: str) -> dict:
     return json.loads(text)
 
 
-def validate_answer(payload: dict, hits: list[Hit]) -> tuple[str, list[str], float, bool, str]:
+def _tokens(text: str) -> set[str]:
+    out: set[str] = set()
+    for match in _TOKEN.finditer(text or ""):
+        tok = match.group(0).lower()
+        if tok in _STOP or len(tok) < 2:
+            continue
+        out.add(tok)
+    return out
+
+
+def _hit_blob(hit: Hit) -> str:
+    rec = hit.record
+    return f"{rec.id} {rec.control_id} {rec.title} {rec.text}"
+
+
+def _ids_in(text: str) -> list[str]:
+    return [m.group(0) for m in _CONTROL_ID.finditer(text or "")]
+
+
+def out_of_scope_unanswered(question: str, passages: str) -> bool:
+    blob = passages or ""
+    for cue in _OUT_OF_SCOPE:
+        if cue.search(question or "") and not cue.search(blob):
+            return True
+    return False
+
+
+def passage_supports_question(question: str, hit: Hit) -> bool:
+    blob = _hit_blob(hit)
+    q_ids = _ids_in(question)
+    if q_ids:
+        blob_l = blob.lower()
+        cid = hit.record.control_id.lower()
+        if any(qid.lower() in blob_l or qid.lower() == cid for qid in q_ids):
+            return True
+        return False
+    qtok = _tokens(question)
+    ptok = _tokens(blob)
+    if not qtok:
+        return False
+    overlap = len(qtok & ptok)
+    return overlap >= 3 or (overlap / len(qtok)) >= MIN_QUESTION_OVERLAP
+
+
+def supporting_hits(question: str, hits: list[Hit]) -> list[Hit]:
+    if not hits:
+        return []
+    combined = " ".join(_hit_blob(h) for h in hits)
+    if out_of_scope_unanswered(question, combined):
+        return []
+    kept = [h for h in hits if passage_supports_question(question, h)]
+    return kept
+
+
+def _cited_hits(hits: list[Hit], citations: list[str]) -> list[Hit]:
+    wanted = {c.lower() for c in citations}
+    out = []
+    for hit in hits:
+        rec = hit.record
+        if rec.id.lower() in wanted or rec.control_id.lower() in wanted:
+            out.append(hit)
+    return out
+
+
+def _ungrounded_ratio(answer: str, passages: str, question: str) -> float:
+    allowed = _tokens(passages) | _tokens(question)
+    claimed = _tokens(answer)
+    if not claimed:
+        return 1.0
+    extra = claimed - allowed
+    return len(extra) / len(claimed)
+
+
+def validate_answer(
+    payload: dict,
+    hits: list[Hit],
+    question: str = "",
+) -> tuple[str, list[str], float, bool, str]:
     allowed = {hit.record.id for hit in hits} | {hit.record.control_id for hit in hits}
     allowed_l = {a.lower() for a in allowed}
     citations = [str(c) for c in payload.get("citations") or []]
@@ -50,10 +185,25 @@ def validate_answer(payload: dict, hits: list[Hit]) -> tuple[str, list[str], flo
     reason = str(payload.get("reason") or "")
     if not hits:
         return "", [], 0.0, True, "no retrieved passages"
+    if question and not supporting_hits(question, hits):
+        return "", [], 0.0, True, "retrieved passages do not support the question"
     if not refused and not valid:
         return "", [], 0.0, True, "answer lacked citations that exist in retrieved context"
     if not refused and not text:
         return "", valid, 0.0, True, "empty answer"
+    if not refused and question:
+        cited = _cited_hits(hits, valid) or hits
+        passages = " ".join(_hit_blob(h) for h in cited)
+        invented = [
+            aid
+            for aid in _ids_in(text)
+            if aid.lower() not in passages.lower()
+            and aid.lower() not in {h.record.control_id.lower() for h in cited}
+        ]
+        if invented:
+            return "", valid, 0.0, True, "answer cited identifiers that are not in the cited passages"
+        if _ungrounded_ratio(text, passages, question) > MAX_UNGROUNDED:
+            return "", valid, 0.0, True, "answer claims are not supported by cited passages"
     return text, valid, confidence, refused, reason
 
 
@@ -88,16 +238,17 @@ def grok_complete(settings: Settings, prompt: str) -> tuple[str, int, int, int]:
     )
 
 
-def extractive_fallback(hits: list[Hit]) -> dict:
-    if not hits:
+def extractive_fallback(hits: list[Hit], question: str = "") -> dict:
+    supported = supporting_hits(question, hits) if question else list(hits)
+    if not supported:
         return {
             "answer": "",
             "citations": [],
             "confidence": 0.0,
             "refusal": True,
-            "reason": "no retrieved passages",
+            "reason": "no retrieved passages" if not hits else "retrieved passages do not support the question",
         }
-    top = hits[0].record
+    top = supported[0].record
     return {
         "answer": f"{top.control_id}: {top.text[:600]}",
         "citations": [top.id],
@@ -113,22 +264,24 @@ def answer_question(
     hits: list[Hit],
     completer: Callable[[Settings, str], tuple[str, int, int, int]] | None = None,
 ) -> Answer:
-    if not hits:
+    supported = supporting_hits(question, hits) if hits else []
+    if not hits or not supported:
+        reason = "no retrieved passages" if not hits else "retrieved passages do not support the question"
         return Answer(
             question=question,
             text="",
             citations=[],
             confidence=0.0,
             refused=True,
-            reason="no retrieved passages",
+            reason=reason,
             model="none",
             latency_ms=0,
             prompt_tokens=0,
             completion_tokens=0,
-            retrieved_ids=[],
+            retrieved_ids=[h.record.id for h in hits],
         )
     prompt = (
-        f"Question: {question}\n\nRetrieved passages:\n{_passages(hits)}\n\n"
+        f"Question: {question}\n\nRetrieved passages:\n{_passages(supported)}\n\n"
         "Respond with JSON only."
     )
     model = "extractive"
@@ -145,8 +298,8 @@ def answer_question(
         model = settings.xai_model
         payload = parse_model_json(raw)
     else:
-        payload = extractive_fallback(hits)
-    text, citations, confidence, refused, reason = validate_answer(payload, hits)
+        payload = extractive_fallback(supported, question)
+    text, citations, confidence, refused, reason = validate_answer(payload, supported, question)
     return Answer(
         question=question,
         text=text,

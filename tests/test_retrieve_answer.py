@@ -1,7 +1,9 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from atlas.answer import answer_question, validate_answer
+from atlas.evaluate import run_eval
 from atlas.config import settings
 from atlas.ingest import parse_cpg_html, parse_cprt_80066, parse_kev
 from atlas.models import Hit, Record
@@ -121,7 +123,7 @@ def test_missing_citation_is_refused():
 
 
 def test_extractive_answer_cites_retrieved_id():
-    cfg = settings()
+    cfg = replace(settings(), xai_api_key="")
     retriever = Retriever(MemoryStore(_records()), cfg)
     hits = retriever.search("AC-2 account management")
     answer = answer_question(cfg, "What is AC-2?", hits)
@@ -135,3 +137,96 @@ def test_no_hits_refused_and_queued():
     answer = answer_question(cfg, "What is ISO 27001 A.5.23?", [])
     assert answer.refused is True
     assert should_review(answer) is True
+
+
+def test_extractive_refuses_unrelated_hit():
+    rec = Record(
+        id="sp800-53-r5:ac-2:statement",
+        framework="sp800-53",
+        control_id="AC-2",
+        title="Account Management",
+        text="Define and document the types of accounts allowed.",
+        family="ac",
+        version="5.2.0",
+        source_url="https://example.invalid",
+        namespace="sp800-53-r5",
+        kind="statement",
+    )
+    hits = [Hit(id=rec.id, score=0.4, record=rec)]
+    cfg = replace(settings(), xai_api_key="")
+    iso = answer_question(cfg, "Quote the exact ISO 27001:2022 Annex A control text for A.5.23.", hits)
+    assert iso.refused is True
+    phi = answer_question(cfg, "What ePHI did patient 123456 have at Example Community Hospital last Tuesday?", hits)
+    assert phi.refused is True
+    ok = answer_question(cfg, "What does NIST SP 800-53 AC-2 require for account management?", hits)
+    assert ok.refused is False
+    assert "AC-2" in ok.text
+
+
+def test_invented_control_in_cited_answer_is_refused():
+    rec = Record(
+        id="sp800-53-r5:ac-2:statement",
+        framework="sp800-53",
+        control_id="AC-2",
+        title="Account Management",
+        text="Define account types.",
+        family="ac",
+        version="5.2.0",
+        source_url="https://example.invalid",
+        namespace="sp800-53-r5",
+        kind="statement",
+    )
+    hits = [Hit(id=rec.id, score=1.0, record=rec)]
+    _text, _cites, _conf, refused, reason = validate_answer(
+        {
+            "answer": "AC-2 requires ZZ-9 widget rotation and quantum passwords.",
+            "citations": ["sp800-53-r5:ac-2:statement"],
+            "confidence": 0.9,
+            "refusal": False,
+        },
+        hits,
+        question="What does AC-2 require?",
+    )
+    assert refused is True
+    assert "not supported" in reason or "identifiers" in reason
+
+
+def test_eval_fails_when_must_refuse_is_missed():
+    cfg = replace(settings(), xai_api_key="")
+    recs = _records()
+    retriever = Retriever(MemoryStore(recs), cfg)
+    questions = [
+        {
+            "id": "ac2-search",
+            "question": "What does NIST SP 800-53 AC-2 require for account management?",
+            "expected_controls": ["AC-2"],
+            "must_refuse": False,
+        },
+        {
+            "id": "unsupported-iso",
+            "question": "Quote the exact ISO 27001:2022 Annex A control text for A.5.23.",
+            "expected_controls": [],
+            "must_refuse": True,
+        },
+    ]
+    summary, code = run_eval(questions, retriever, cfg, min_hit_rate=0.8, min_refuse_rate=1.0)
+    assert summary["refuse_rate"] == 1.0
+    assert code == 0
+    iso_row = next(r for r in summary["rows"] if r["id"] == "unsupported-iso")
+    assert iso_row["refused"] is True
+    missed, missed_code = run_eval(
+        [
+            {
+                "id": "mislabeled-refuse",
+                "question": "What does NIST SP 800-53 AC-2 require for account management?",
+                "expected_controls": ["AC-2"],
+                "must_refuse": True,
+            }
+        ],
+        retriever,
+        cfg,
+        min_hit_rate=0.0,
+        min_refuse_rate=1.0,
+    )
+    assert missed["refuse_rate"] == 0.0
+    assert missed_code == 1
