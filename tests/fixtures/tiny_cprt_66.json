@@ -1,0 +1,57 @@
+{
+  "response": {
+    "elements": {
+      "elements": [
+        {
+          "element_type": "standard",
+          "element_identifier": "164.308(a)(1)",
+          "title": "Security Management Process",
+          "text": "Implement policies and procedures to prevent, detect, contain, and correct security violations.",
+          "doc_identifier": "SP800_66_2_0_0"
+        },
+        {
+          "element_type": "imp_spec",
+          "element_identifier": "164.308(a)(1)(ii)(A)",
+          "title": "Risk Analysis",
+          "text": "Conduct an accurate and thorough assessment of the potential risks and vulnerabilities to ePHI.",
+          "doc_identifier": "SP800_66_2_0_0"
+        },
+        {
+          "element_type": "key_activity",
+          "element_identifier": "KA_164.308(a)(1).1",
+          "title": "Identify ePHI and Where It Is Stored",
+          "text": "",
+          "doc_identifier": "SP800_66_2_0_0"
+        },
+        {
+          "element_type": "description",
+          "element_identifier": "D_164.308(a)(1).1.1",
+          "title": "",
+          "text": "Identify where ePHI is generated, stored, and transmitted.",
+          "doc_identifier": "SP800_66_2_0_0"
+        },
+        {
+          "element_type": "sample_question",
+          "element_identifier": "SQ_164.308(a)(1).1.01",
+          "title": "",
+          "text": "Has the organization identified where ePHI is stored?",
+          "doc_identifier": "SP800_66_2_0_0"
+        },
+        {
+          "element_type": "footnote",
+          "element_identifier": "F_1",
+          "title": "1",
+          "text": "See Section 5.",
+          "doc_identifier": "SP800_66_2_0_0"
+        }
+      ],
+      "relationships": [
+        {
+          "source_element_identifier": "KA_164.308(a)(1).1",
+          "dest_element_identifier": "D_164.308(a)(1).1.1",
+          "relationship_identifier": "projection"
+        }
+      ]
+    }
+  }
+}

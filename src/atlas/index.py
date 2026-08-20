@@ -41,7 +41,7 @@ class PineconeStore:
         for namespace, items in grouped.items():
             for start in range(0, len(items), BATCH):
                 batch = [item.pinecone_record() for item in items[start : start + BATCH]]
-                self.index.upsert_records(namespace, batch)
+                self.index.upsert_records(namespace=namespace, records=batch)
                 count += len(batch)
                 time.sleep(0.15)
         return count
@@ -54,27 +54,43 @@ class PineconeStore:
         filter: dict | None = None,
         rerank: bool = False,
     ) -> list[dict]:
-        body: dict = {
-            "top_k": top_k,
-            "inputs": {"text": query},
-        }
-        if filter:
-            body["filter"] = filter
-        kwargs: dict = {"namespace": namespace, "query": body}
+        kwargs: dict = {}
         if rerank:
             kwargs["rerank"] = {
                 "model": "bge-reranker-v2-m3",
                 "top_n": min(5, top_k),
                 "rank_fields": ["content"],
             }
-        result = self.index.search(**kwargs)
-        hits = result.get("result", {}).get("hits") or result.get("matches") or []
+        result = self.index.search(
+            namespace=namespace,
+            top_k=top_k,
+            inputs={"text": query},
+            filter=filter,
+            **kwargs,
+        )
+        hits = _search_hits(result)
         out = []
         for hit in hits:
-            fields = getattr(hit, "fields", None) or hit.get("fields") or hit.get("metadata") or {}
+            fields = getattr(hit, "fields", None)
+            if fields is None and isinstance(hit, dict):
+                fields = hit.get("fields") or hit.get("metadata") or {}
+            fields = fields or {}
             score = getattr(hit, "score", None)
-            if score is None:
+            if score is None and isinstance(hit, dict):
                 score = hit.get("score") or hit.get("_score") or 0.0
-            hid = getattr(hit, "_id", None) or hit.get("_id") or hit.get("id") or fields.get("control_id")
+            hid = getattr(hit, "id", None) or getattr(hit, "_id", None)
+            if hid is None and isinstance(hit, dict):
+                hid = hit.get("_id") or hit.get("id") or fields.get("control_id")
             out.append({"id": hid, "score": float(score or 0), "fields": fields})
         return out
+
+
+def _search_hits(result) -> list:
+    nested = getattr(result, "result", None)
+    if nested is not None:
+        hits = getattr(nested, "hits", None)
+        if hits is not None:
+            return list(hits)
+    if isinstance(result, dict):
+        return list((result.get("result") or {}).get("hits") or result.get("matches") or [])
+    return []

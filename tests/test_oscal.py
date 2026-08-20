@@ -28,6 +28,28 @@ def test_catalog_emits_statement_and_assessment():
     assert assessment.namespace == "sp800-53a"
 
 
+def test_171_label_is_requirement_id():
+    payload = json.loads((FIXTURES / "tiny_171.json").read_text())
+    records = parse_oscal_catalog(
+        payload,
+        {
+            "namespace": "sp800-171-r3",
+            "framework": "sp800-171",
+            "assessment_framework": "sp800-171a",
+            "version": "3.0.0",
+            "source_url": "https://csrc.nist.gov/pubs/sp/800/171/r3/final",
+            "also_emit_assessment_namespace": "sp800-171a",
+            "kind": "statement",
+        },
+    )
+    statement = next(r for r in records if r.kind == "statement")
+    assert statement.control_id == "03.01.01"
+    assert "system accounts" in statement.text
+    assessment = next(r for r in records if r.kind == "assessment")
+    assert assessment.namespace == "sp800-171a"
+    assert assessment.framework == "sp800-171a"
+
+
 def test_baseline_membership_flags():
     catalog = json.loads((FIXTURES / "tiny_catalog.json").read_text())
     profile = json.loads((FIXTURES / "tiny_profile.json").read_text())

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from atlas.answer import answer_question, validate_answer
 from atlas.config import settings
-from atlas.ingest import parse_kev
+from atlas.ingest import parse_cpg_html, parse_cprt_80066, parse_kev
 from atlas.models import Hit, Record
 from atlas.oscal import parse_oscal_catalog
 from atlas.retrieve import MemoryStore, Retriever
@@ -62,6 +62,38 @@ def test_memory_retriever_finds_ac2_and_csf():
     assert any(hit.record.control_id == "GV.OC-01" for hit in csf_hits)
     kev_hits = retriever.search("CVE-2024-0001 Example Widget")
     assert any(hit.record.control_id == "CVE-2024-0001" for hit in kev_hits)
+
+
+def test_cpg_and_80066_parsers():
+    cpg = parse_cpg_html(
+        (FIXTURES / "tiny_cpg.html").read_text(),
+        {
+            "namespace": "cisa-cpg",
+            "framework": "cisa-cpg",
+            "version": "2.0",
+            "source_url": "https://www.cisa.gov/cybersecurity-performance-goals-2-0-cpg-2-0",
+            "kind": "outcome",
+        },
+    )
+    ids = {r.control_id: r for r in cpg}
+    assert "1.A" in ids
+    assert "responsibilities" in ids["1.A"].text.lower()
+    assert "1" in ids and ids["1"].kind == "function"
+
+    hipaa = parse_cprt_80066(
+        json.loads((FIXTURES / "tiny_cprt_66.json").read_text()),
+        {
+            "namespace": "sp800-66r2",
+            "framework": "sp800-66",
+            "version": "2.0.0",
+            "source_url": "https://csrc.nist.gov/pubs/sp/800/66/r2/final",
+        },
+    )
+    kinds = {r.kind for r in hipaa}
+    assert "footnote" not in kinds
+    activity = next(r for r in hipaa if r.kind == "activity")
+    assert "generated, stored, and transmitted" in activity.text
+    assert any(r.control_id.startswith("164.308") and r.kind == "implementation" for r in hipaa)
 
 
 def test_missing_citation_is_refused():

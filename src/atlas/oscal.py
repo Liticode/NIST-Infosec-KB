@@ -8,11 +8,22 @@ from atlas.models import Record
 _INSERT_RE = re.compile(r"\{\{\s*insert:\s*param,\s*([^}]+)\s*\}\}")
 
 
+_PAREN_ID = re.compile(r"^(.+?)\s+\(([^)]+)\)\s*$")
+
+
 def _label(node: dict) -> str:
+    raw = ""
     for prop in node.get("props") or []:
         if prop.get("name") == "label" and prop.get("class") != "zero-padded":
-            return str(prop.get("value") or "")
-    return str(node.get("id") or "")
+            raw = str(prop.get("value") or "")
+            break
+    if not raw:
+        raw = str(node.get("id") or "")
+    # "Account Management (03.01.01)" / "Define Security Requirements (PO.1)" -> public ID
+    match = _PAREN_ID.match(raw)
+    if match and re.search(r"[\d.]", match.group(2)):
+        return match.group(2)
+    return raw
 
 
 def _param_map(control: dict) -> dict[str, str]:
@@ -99,7 +110,7 @@ def parse_oscal_catalog(payload: dict, source: dict) -> list[Record]:
                 records.append(
                     Record(
                         id=f"{assess_ns}:{cid}:assessment",
-                        framework="sp800-53a",
+                        framework=str(source.get("assessment_framework") or assess_ns),
                         control_id=label,
                         title=f"Assessment procedures for {label}",
                         text=f"Assessment for {label} {title}. " + " ".join(assessment),

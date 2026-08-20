@@ -1,0 +1,31 @@
+{
+  "catalog": {
+    "metadata": {"title": "Tiny 800-171 fixture", "version": "3.0.0"},
+    "groups": [
+      {
+        "id": "SP_800_171_03.01",
+        "title": "Access Control",
+        "controls": [
+          {
+            "id": "SP_800_171_03.01.01",
+            "title": "Account Management",
+            "props": [
+              {"name": "sort-id", "value": "03.01.01"},
+              {"name": "label", "value": "Account Management (03.01.01)"}
+            ],
+            "parts": [
+              {
+                "name": "statement",
+                "prose": "Define and document the types of system accounts allowed and prohibited."
+              },
+              {
+                "name": "assessment-objective",
+                "prose": "system account types allowed and prohibited are defined"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

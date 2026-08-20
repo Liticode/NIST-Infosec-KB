@@ -64,7 +64,7 @@ def load_source(settings: Settings, url: str, timeout: float = 60.0) -> bytes:
     dest = cache_path(settings.cache_dir, url)
     if dest.exists():
         return dest.read_bytes()
-    headers = {"User-Agent": "public-control-atlas/0.1 (portfolio demo; +https://github.com)"}
+    headers = {"User-Agent": "public-control-atlas/0.1 (+https://github.com/Liticode/NIST-Infosec-KB)"}
     with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers) as client:
         response = client.get(url)
         response.raise_for_status()

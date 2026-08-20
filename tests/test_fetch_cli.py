@@ -14,6 +14,9 @@ def test_allowlist_accepts_nist_github_and_cisa():
         "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/CSF/v2.0/json/NIST_CSF_v2.0_catalog-min.json"
     )
     assert_allowed_url("https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json")
+    assert_allowed_url(
+        "https://csrc.nist.gov/extensions/nudp/services/json/nudp/framework/version/SP800_66_2_0_0/export/json?element=all"
+    )
 
 
 def test_cli_help():

@@ -36,6 +36,30 @@
     "must_refuse": false
   },
   {
+    "id": "171-account",
+    "question": "What does NIST SP 800-171 requirement 03.01.01 require for account management?",
+    "expected_controls": ["03.01.01"],
+    "must_refuse": false
+  },
+  {
+    "id": "ssdf-po1",
+    "question": "What does NIST SSDF PO.1 require for software development security requirements?",
+    "expected_controls": ["PO.1"],
+    "must_refuse": false
+  },
+  {
+    "id": "cpg-1a",
+    "question": "What is CISA CPG 1.A about establishing cybersecurity responsibilities?",
+    "expected_controls": ["1.A"],
+    "must_refuse": false
+  },
+  {
+    "id": "hipaa-risk-analysis",
+    "question": "What does HIPAA Security Rule 164.308 require for the security management process and risk analysis?",
+    "expected_controls": ["164.308"],
+    "must_refuse": false
+  },
+  {
     "id": "unsupported-iso",
     "question": "Quote the exact ISO 27001:2022 Annex A control text for A.5.23.",
     "expected_controls": [],

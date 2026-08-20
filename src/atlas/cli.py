@@ -6,7 +6,7 @@ import sys
 
 from atlas.answer import answer_question
 from atlas.config import settings
-from atlas.ingest import build_records
+from atlas.ingest import DEFAULT_WAVE, build_records
 from atlas.review import append_review, should_review
 
 
@@ -15,6 +15,10 @@ def _store(cfg, records):
         from atlas.index import PineconeStore
 
         return PineconeStore(cfg)
+    print(
+        "PINECONE_API_KEY not set in project .env; using in-memory MemoryStore",
+        file=sys.stderr,
+    )
     from atlas.retrieve import MemoryStore
 
     store = MemoryStore(records)
@@ -42,7 +46,7 @@ def cmd_query(args: argparse.Namespace) -> int:
     cfg = settings()
     records = []
     if not cfg.pinecone_ready:
-        records, report = build_records(cfg, wave=1)
+        records, report = build_records(cfg, wave=DEFAULT_WAVE)
         if report.aborted:
             print(report.reason, file=sys.stderr)
             return 2
@@ -86,7 +90,7 @@ def cmd_eval(args: argparse.Namespace) -> int:
 
     cfg = settings()
     questions = json.loads(cfg.eval_path.read_text())
-    records, report = build_records(cfg, wave=1)
+    records, report = build_records(cfg, wave=DEFAULT_WAVE)
     if report.aborted:
         print(report.reason, file=sys.stderr)
         return 2
@@ -138,7 +142,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     ingest = sub.add_parser("ingest", help="Download, normalize, and optionally upsert")
     ingest.add_argument("--dry-run", action="store_true")
-    ingest.add_argument("--wave", type=int, default=1)
+    ingest.add_argument("--wave", type=int, default=DEFAULT_WAVE)
     ingest.set_defaults(func=cmd_ingest)
 
     query = sub.add_parser("query", help="Retrieve and answer a question")

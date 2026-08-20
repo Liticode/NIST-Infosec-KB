@@ -25,17 +25,22 @@ ingest official JSON  →  normalize by control  →  Pinecone namespaces
                                       cite / refuse / review queue
 ```
 
-## Corpus (Wave 1)
+## Corpus
 
-| Namespace | Source | What it unlocks |
-|---|---|---|
-| `csf-2` | NIST CSF 2.0 OSCAL | Outcomes such as GV.OC-01 |
-| `sp800-53-r5` | NIST SP 800-53 Rev. 5.2.0 | Control statements |
-| `sp800-53a` | Same catalog (embedded 800-53A) | Assessment objectives and methods |
-| `sp800-53b` | NIST SP 800-53B profiles | Low / moderate / high / privacy membership |
-| `ai-rmf` | NIST AI RMF 1.0 core titles | Responsible-AI vocabulary |
-| `cisa-kev` | CISA KEV JSON | Exploited CVEs |
-| `bod-22-01` | CISA BOD 22-01 | Why KEV remediations are obligatory for FCEB |
+| Namespace | Source | Wave | What it unlocks |
+|---|---|---|---|
+| `csf-2` | NIST CSF 2.0 OSCAL | 1 | Outcomes such as GV.OC-01 |
+| `sp800-53-r5` | NIST SP 800-53 Rev. 5.2.0 | 1 | Control statements |
+| `sp800-53a` | Same catalog (embedded 800-53A) | 1 | Assessment objectives and methods |
+| `sp800-53b` | NIST SP 800-53B profiles | 1 | Low / moderate / high / privacy membership |
+| `ai-rmf` | NIST AI RMF 1.0 core titles | 1 | Responsible-AI vocabulary |
+| `cisa-kev` | CISA KEV JSON | 1 | Exploited CVEs |
+| `bod-22-01` | CISA BOD 22-01 | 1 | Why KEV remediations are obligatory for FCEB |
+| `sp800-171-r3` | NIST SP 800-171 Rev. 3 OSCAL | 2 | CUI requirements such as 03.01.01 |
+| `sp800-171a` | Same catalog (embedded 800-171A) | 2 | Assessment objectives for CUI requirements |
+| `sp800-218` | NIST SP 800-218 SSDF 1.1 OSCAL | 2 | Practices such as PO.1 |
+| `cisa-cpg` | CISA CPG 2.0 | 2 | Cross-sector goals such as 1.A |
+| `sp800-66r2` | NIST SP 800-66 Rev. 2 CPRT JSON | 2 | HIPAA Security Rule standards and 800-66 activities |
 
 All of that stays inside Pinecone **Starter** (2 GB, 5M embedding tokens). See [SOURCES.md](SOURCES.md).
 
@@ -43,11 +48,13 @@ ISO 27001, PCI-DSS, HITRUST, CIS, and SCF mappings are **intentionally absent**.
 
 ## Quick start
 
-Python 3.12+ (this folder already has a local venv with Pinecone installed).
+Python 3.12+. Clone from GitHub (do not copy a local venv or `.env`):
 
 ```bash
-cd ~/Scripts/PineconeINFOSEC
-source bin/activate          # existing project venv
+git clone https://github.com/Liticode/NIST-Infosec-KB.git
+cd NIST-Infosec-KB
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -e ".[dev]"
 cp .env.example .env         # add keys when you have them
 pytest                       # no network, no keys
@@ -99,6 +106,7 @@ tests/              Fake retriever + citation tests (no secrets)
 - Models can still err; refusal reduces fabrication, it does not eliminate it.
 - Baseline flags come from official 800-53B profiles, not from a commercial crosswalk.
 - AI RMF Wave 1 is the official core function/category titles, not the full playbook.
+- SP 800-66r2 is public NIST/HIPAA Security Rule guidance, not patient records. Queries about a named person's ePHI are refused.
 
 ## License
 

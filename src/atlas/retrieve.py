@@ -17,6 +17,11 @@ DEFAULT_NAMESPACES = (
     "ai-rmf",
     "cisa-kev",
     "bod-22-01",
+    "sp800-171-r3",
+    "sp800-171a",
+    "sp800-218",
+    "cisa-cpg",
+    "sp800-66r2",
 )
 
 

@@ -46,7 +46,7 @@ Metadata: `framework`, `control_id`, `family`, `version`, `kind`, `source_url`, 
 
 ## Namespaces
 
-Logical isolation inside one serverless index (`public-control-atlas`, AWS us-east-1, integrated `llama-text-embed-v2`). Starter allows 100 namespaces; Wave 1 uses seven.
+Logical isolation inside one serverless index (`public-control-atlas`, AWS us-east-1, integrated `llama-text-embed-v2`). Starter allows 100 namespaces; Wave 1+2 use twelve.
 
 ## Answer contract
 
