@@ -105,6 +105,38 @@ python -m atlas eval
 
 `ingest` (without `--dry-run`) writes to Pinecone only when `PINECONE_API_KEY` is set; otherwise it uses an in-memory index that lasts for that process only.
 
+### 5. Ask your AI to help you configure it
+
+You do not have to set this up by hand. After you clone the repo, open the folder in the assistant you already use (Claude, ChatGPT, Copilot, Cursor, Gemini, and so on) so it can **read the files**. Then paste the prompt below.
+
+Tell it to look at `README.md`, `.env.example`, `pyproject.toml`, and `src/atlas/` before it suggests commands. Do **not** paste API keys into the chat; put keys only in local `.env`.
+
+```text
+I cloned https://github.com/Liticode/NIST-Infosec-KB (Public Control Atlas).
+I am a semi-technical auditor, not a Python specialist. Please read this repo
+(README.md, .env.example, pyproject.toml, src/atlas/) and help me get it working
+on my machine.
+
+Do this:
+1. Check that I have Git and Python 3.12+.
+2. Create/activate a project venv (.venv) and pip install -e ".[dev]".
+3. Run pytest, then python -m atlas ingest --dry-run, then a sample
+   python -m atlas query about AC-2. Explain citations vs refused.
+4. Configuration: the only API key needed for a live cloud index is
+   PINECONE_API_KEY (free Pinecone Starter at https://app.pinecone.io).
+   Stay on Starter; do not start the Standard trial. Copy .env.example to
+   .env if we use a key; never commit .env. XAI_API_KEY is optional (Grok
+   prose). Other .env lines are overrides or unused — do not make me
+   create extra vendor accounts.
+5. Suggest use options: local no-key demo vs live Pinecone ingest + query.
+   Give me copy-paste commands for my OS.
+
+Constraints: do not ingest ISO, PCI, HITRUST, CIS, SCF, PHI, or client files.
+Do not print or store secrets. Do not change code unless I ask.
+```
+
+If the assistant cannot see the repo, attach or `@`-mention the project folder first. A useful first result is: venv created, tests green, and either a local query or a one-line instruction for where to paste a Pinecone Starter key.
+
 ## Pinecone Starter notes
 
 - Create an account at [app.pinecone.io](https://app.pinecone.io) and stay on **Starter**.
