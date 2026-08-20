@@ -46,32 +46,64 @@ All of that stays inside Pinecone **Starter** (2 GB, 5M embedding tokens). See [
 
 ISO 27001, PCI-DSS, HITRUST, CIS, and SCF mappings are **intentionally absent**. Those texts are not public-domain.
 
-## Quick start
+## Quick start (auditor walkthrough)
 
-Python 3.12+. Clone from GitHub (do not copy a local venv or `.env`):
+You need **Git** and **Python 3.12 or newer**. Check with `python3 --version`. You do **not** need API keys to clone, run tests, or try a local question.
+
+### 1. Clone and make a virtual environment
+
+A virtual environment (`.venv`) is a project-local Python install so this tool’s packages do not mix with the rest of your machine. Create it once; **activate it in every new terminal** before you run commands.
 
 ```bash
 git clone https://github.com/Liticode/NIST-Infosec-KB.git
 cd NIST-Infosec-KB
 python3 -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate          # macOS / Linux
+# Windows:  .venv\Scripts\activate
 pip install -e ".[dev]"
-cp .env.example .env         # add keys when you have them
-pytest                       # no network, no keys
-python -m atlas ingest --dry-run
 ```
 
-Live upsert and Grok answers need keys in `.env`:
+Your prompt should show `(.venv)`. To leave it later: `deactivate`. Do not copy someone else’s `.venv` or `.env`.
+
+### 2. `.env` — only if you want live Pinecone or Grok
+
+Copy the template. The real `.env` is gitignored and must never be committed.
 
 ```bash
-PINECONE_API_KEY=...
-XAI_API_KEY=...
+cp .env.example .env
+```
+
+| Variable | Required? | What it does |
+|---|---|---|
+| *(none)* | No | Tests, `--dry-run` ingest, and local `query` work with no keys. Answers are extractive quotes of retrieved passages. |
+| `PINECONE_API_KEY` | Only for a cloud index | Upserts the catalog into **your** free [Pinecone Starter](https://app.pinecone.io) index. Stay on Starter; do not start the Standard trial. |
+| `XAI_API_KEY` | Only for Grok answers | Lets `query` write a cited answer from retrieved passages. Without it, you still get citations plus an extractive quote. |
+| `NVD_API_KEY` | No | Optional; unused for the default Wave 1–2 ingest. |
+
+Open `.env` in a text editor and paste keys on the right-hand side of `PINECONE_API_KEY=` and/or `XAI_API_KEY=` with no quotes. Leave a line blank if you are not using that service.
+
+### 3. Prove it works (no keys)
+
+```bash
+pytest                            # automated tests; no network
+python -m atlas ingest --dry-run  # download/normalize catalogs; do not upsert
+python -m atlas query "How would an auditor assess AC-2 account management?"
+```
+
+A good result includes `citations` (record IDs) and `refused: false`. A question this corpus does not cover (ISO 27001, PCI, a named patient’s ePHI, a client policy) should come back `refused: true`.
+
+### 4. Optional: live Pinecone + Grok
+
+After keys are in `.env`:
+
+```bash
 python -m atlas ingest
 python -m atlas query "How would an auditor assess AC-2 account management?"
+python -m atlas query "What does NIST SP 800-171 requirement 03.01.01 require for account management?"
 python -m atlas eval
 ```
 
-Without keys, `ingest` (not `--dry-run`) and `query` use an in-memory lexical index and an extractive fallback so the CLI still works offline.
+`ingest` (without `--dry-run`) writes to Pinecone only when `PINECONE_API_KEY` is set; otherwise it uses an in-memory index that lasts for that process only.
 
 ## Pinecone Starter notes
 
