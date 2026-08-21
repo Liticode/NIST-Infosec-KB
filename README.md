@@ -75,22 +75,24 @@ cp .env.example .env
 
 | Variable | Required? | What it does |
 |---|---|---|
-| *(none)* | No | Tests, `--dry-run` ingest, and local `query` work with no keys. Answers are extractive quotes of retrieved passages. |
+| *(none)* | No | `pytest` and extractive `query` work with no keys. |
 | `PINECONE_API_KEY` | Only for a cloud index | Upserts the catalog into **your** free [Pinecone Starter](https://app.pinecone.io) index. Stay on Starter; do not start the Standard trial. |
 | `XAI_API_KEY` | Only for Grok answers | Lets `query` write a cited answer from retrieved passages. Without it, you still get citations plus an extractive quote. |
-| `NVD_API_KEY` | No | Optional; unused for the default Wave 1–2 ingest. |
 
 Open `.env` in a text editor and paste keys on the right-hand side of `PINECONE_API_KEY=` and/or `XAI_API_KEY=` with no quotes. Leave a line blank if you are not using that service.
 
 ### 3. Prove it works (no keys)
 
+**Network note:** `pytest` is fully offline. `atlas ingest` (with or without `--dry-run`) downloads allowlisted HTTPS catalogs from NIST/CISA unless they are already in `data/cache/`. `--dry-run` only skips the Pinecone upsert. On a locked-down network you will get a clear runtime error pointing you back to `pytest`.
+
 ```bash
 pytest                            # automated tests; no network
-python -m atlas ingest --dry-run  # download/normalize catalogs; do not upsert
+python -m atlas ingest --dry-run  # needs HTTPS (or cache); does not upsert
 python -m atlas query "How would an auditor assess AC-2 account management?"
+python -m atlas eval              # extractive by default; never sends refusal probes to an LLM
 ```
 
-A good result includes `citations` (record IDs) and `refused: false`. Refusal means retrieved passages do not support the question (wrong control/framework, out-of-scope cue such as ISO 27001 / PCI / a named patient ID, or answer text that is not in the citations). Extractive mode will not quote an unrelated hit. `python -m atlas eval` fails if expected refusals are missed.
+A good result includes `citations` (record IDs) and `refused: false`. Refusal means retrieved passages do not support the question (wrong control/framework, out-of-scope cue such as ISO 27001 / PCI / a patient id pattern, or answer text that is not in the citations). Extractive mode will not quote an unrelated hit. `python -m atlas eval` fails if expected refusals are missed.
 
 ### 4. Optional: live Pinecone + Grok
 
@@ -101,6 +103,7 @@ python -m atlas ingest
 python -m atlas query "How would an auditor assess AC-2 account management?"
 python -m atlas query "What does NIST SP 800-171 requirement 03.01.01 require for account management?"
 python -m atlas eval
+# optional: python -m atlas eval --use-llm   # answerable items only; must_refuse stays extractive
 ```
 
 `ingest` (without `--dry-run`) writes to Pinecone only when `PINECONE_API_KEY` is set; otherwise it uses an in-memory index that lasts for that process only.
@@ -112,7 +115,7 @@ You do not have to set this up by hand. After you clone the repo, open the folde
 Tell it to look at `README.md`, `.env.example`, `pyproject.toml`, and `src/atlas/` before it suggests commands. Do **not** paste API keys into the chat; put keys only in local `.env`.
 
 ```text
-I cloned https://github.com/Liticode/NIST-Infosec-KB (Public Control Atlas).
+I cloned this Public Control Atlas repository.
 I am a semi-technical auditor, not a Python specialist. Please read this repo
 (README.md, .env.example, pyproject.toml, src/atlas/) and help me get it working
 on my machine.
@@ -120,16 +123,19 @@ on my machine.
 Do this:
 1. Check that I have Git and Python 3.12+.
 2. Create/activate a project venv (.venv) and pip install -e ".[dev]".
-3. Run pytest, then python -m atlas ingest --dry-run, then a sample
-   python -m atlas query about AC-2. Explain citations vs refused.
+3. Run pytest (offline). Then, if I have HTTPS access, run
+   python -m atlas ingest --dry-run (downloads NIST/CISA catalogs; does not
+   upsert). Then a sample python -m atlas query about AC-2. Explain
+   citations vs refused. Remind me that --dry-run still needs network unless
+   data/cache/ is already populated.
 4. Configuration: the only API key needed for a live cloud index is
    PINECONE_API_KEY (free Pinecone Starter at https://app.pinecone.io).
    Stay on Starter; do not start the Standard trial. Copy .env.example to
    .env if we use a key; never commit .env. XAI_API_KEY is optional (Grok
-   prose). Other .env lines are overrides or unused — do not make me
-   create extra vendor accounts.
+   prose). Do not make me create extra vendor accounts.
 5. Suggest use options: local no-key demo vs live Pinecone ingest + query.
-   Give me copy-paste commands for my OS.
+   Give me copy-paste commands for my OS. Eval defaults to extractive;
+   --use-llm is optional and must never send must_refuse probes to a vendor.
 
 Constraints: do not ingest ISO, PCI, HITRUST, CIS, SCF, PHI, or client files.
 Do not print or store secrets. Do not change code unless I ask.
@@ -170,7 +176,7 @@ tests/              Fake retriever + citation tests (no secrets)
 - Models can still err; refusal reduces fabrication, it does not eliminate it.
 - Baseline flags come from official 800-53B profiles, not from a commercial crosswalk.
 - AI RMF Wave 1 is the official core function/category titles, not the full playbook.
-- SP 800-66r2 is public NIST/HIPAA Security Rule guidance, not patient records. Queries about a named person's ePHI are refused.
+- SP 800-66r2 is public NIST/HIPAA Security Rule guidance, not patient records. The corpus has no ePHI. Grounding refuses some out-of-scope patterns (for example a `patient <id>` cue that is not in the passages); it is not a general privacy filter. Do not paste real ePHI or client secrets into `atlas query`.
 
 ## License
 

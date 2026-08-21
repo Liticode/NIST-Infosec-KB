@@ -230,3 +230,21 @@ def test_eval_fails_when_must_refuse_is_missed():
     )
     assert missed["refuse_rate"] == 0.0
     assert missed_code == 1
+    live, live_code = run_eval(
+        [
+            {
+                "id": "unsupported-iso",
+                "question": "Quote the exact ISO 27001:2022 Annex A control text for A.5.23.",
+                "expected_controls": [],
+                "must_refuse": True,
+            }
+        ],
+        retriever,
+        settings(),  # may include XAI_API_KEY in the environment
+        min_hit_rate=0.0,
+        min_refuse_rate=1.0,
+        use_llm=True,
+    )
+    assert live_code == 0
+    assert live["rows"][0]["refused"] is True
+    assert live["rows"][0]["model"] in {"none", "extractive"}

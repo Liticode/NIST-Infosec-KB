@@ -27,7 +27,17 @@ def _store(cfg, records):
 
 def cmd_ingest(args: argparse.Namespace) -> int:
     cfg = settings()
-    records, report = build_records(cfg, wave=args.wave)
+    print(
+        "Note: ingest downloads allowlisted HTTPS catalogs (NIST/CISA). "
+        "--dry-run skips Pinecone upsert only; it still needs network unless sources are already cached. "
+        "Offline proof with no network: pytest",
+        file=sys.stderr,
+    )
+    try:
+        records, report = build_records(cfg, wave=args.wave)
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     print(json.dumps(report.to_dict(), indent=2))
     if report.aborted:
         print(report.reason, file=sys.stderr)
@@ -46,7 +56,11 @@ def cmd_query(args: argparse.Namespace) -> int:
     cfg = settings()
     records = []
     if not cfg.pinecone_ready:
-        records, report = build_records(cfg, wave=DEFAULT_WAVE)
+        try:
+            records, report = build_records(cfg, wave=DEFAULT_WAVE)
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
         if report.aborted:
             print(report.reason, file=sys.stderr)
             return 2
@@ -97,12 +111,19 @@ def cmd_eval(args: argparse.Namespace) -> int:
         return 2
     store = _store(cfg, records)
     retriever = Retriever(store, cfg)
+    if args.use_llm and cfg.xai_ready:
+        print(
+            "Note: --use-llm sends answerable eval questions to the configured LLM. "
+            "must_refuse probes stay extractive and are never sent.",
+            file=sys.stderr,
+        )
     summary, code = run_eval(
         questions,
         retriever,
         cfg,
         min_hit_rate=args.min_hit_rate,
         min_refuse_rate=args.min_refuse_rate,
+        use_llm=args.use_llm,
     )
     summary["ingest"] = report.to_dict()
     print(json.dumps(summary, indent=2))
@@ -128,6 +149,11 @@ def build_parser() -> argparse.ArgumentParser:
     ev = sub.add_parser("eval", help="Run the offline evaluation set")
     ev.add_argument("--min-hit-rate", type=float, default=0.8)
     ev.add_argument("--min-refuse-rate", type=float, default=1.0)
+    ev.add_argument(
+        "--use-llm",
+        action="store_true",
+        help="Use XAI_API_KEY for answerable items only; must_refuse probes stay extractive",
+    )
     ev.set_defaults(func=cmd_eval)
     return parser
 

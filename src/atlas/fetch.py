@@ -74,15 +74,23 @@ def _http_get(url: str, timeout: float) -> bytes:
     assert_allowed_url(url)
     headers = {"User-Agent": "public-control-atlas/0.1 (+https://github.com/Liticode/NIST-Infosec-KB)"}
     current = url
-    with httpx.Client(timeout=timeout, follow_redirects=False, headers=headers) as client:
-        for _ in range(MAX_REDIRECTS):
-            assert_allowed_url(current)
-            response = client.get(current)
-            if response.is_redirect:
-                current = resolve_redirect(str(response.url), response.headers.get("location") or "")
-                continue
-            response.raise_for_status()
-            return response.content
+    try:
+        with httpx.Client(timeout=timeout, follow_redirects=False, headers=headers) as client:
+            for _ in range(MAX_REDIRECTS):
+                assert_allowed_url(current)
+                response = client.get(current)
+                if response.is_redirect:
+                    current = resolve_redirect(str(response.url), response.headers.get("location") or "")
+                    continue
+                response.raise_for_status()
+                return response.content
+    except httpx.HTTPError as exc:
+        raise RuntimeError(
+            f"Network fetch failed for {url}. "
+            "ingest (including --dry-run) needs HTTPS access to allowlisted hosts "
+            "(raw.githubusercontent.com, csrc.nist.gov, www.cisa.gov, …). "
+            "For an offline check with no network, run: pytest"
+        ) from exc
     raise ValueError(f"too many redirects fetching {url}")
 
 
