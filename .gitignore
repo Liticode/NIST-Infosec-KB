@@ -34,3 +34,12 @@ htmlcov/
 .DS_Store
 .idea/
 .vscode/
+.cursor/
+
+# Local operator / agent notes (not part of the distribution)
+STATE.md
+AGENTS.md
+CLAUDE.md
+MEMORY.md
+.grok/
+logs/
