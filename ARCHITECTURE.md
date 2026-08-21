@@ -40,6 +40,8 @@ flowchart LR
 
 ## Record
 
+Fetch is HTTPS-only. Redirect hops are re-checked against the host allowlist. `local:` paths must stay inside the repository; raw filesystem URLs are not read.
+
 One vector per control statement, assessment block, baseline summary, KEV row, or directive. Chunking follows **control boundaries**, not arbitrary token windows.
 
 Metadata: `framework`, `control_id`, `family`, `version`, `kind`, `source_url`, `related_ids`, `in_low` / `in_moderate` / `in_high` / `in_privacy`.

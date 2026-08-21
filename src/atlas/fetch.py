@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import httpx
 
@@ -23,6 +23,7 @@ ALLOWED_HOSTS = {
     "doi.org",
 }
 
+MAX_REDIRECTS = 8
 _TAG_RE = re.compile(r"<[^>]+>")
 _WS_RE = re.compile(r"\s+")
 
@@ -31,11 +32,19 @@ def assert_allowed_url(url: str) -> None:
     if url.startswith("local:"):
         return
     parsed = urlparse(url)
-    if parsed.scheme not in {"https", "http"}:
-        raise ValueError(f"refusing non-http URL: {url}")
+    if parsed.scheme != "https":
+        raise ValueError(f"refusing non-https URL: {url}")
     host = (parsed.hostname or "").lower()
-    if host not in ALLOWED_HOSTS:
+    if not host or host not in ALLOWED_HOSTS:
         raise ValueError(f"URL host not on allowlist: {host}")
+
+
+def resolve_redirect(current: str, location: str) -> str:
+    if not (location or "").strip():
+        raise ValueError("redirect with empty Location")
+    nxt = urljoin(current, location.strip())
+    assert_allowed_url(nxt)
+    return nxt
 
 
 def cache_path(cache_dir: Path, url: str) -> Path:
@@ -47,29 +56,47 @@ def cache_path(cache_dir: Path, url: str) -> Path:
 
 def resolve_local(settings: Settings, spec: str) -> Path:
     rel = spec.removeprefix("local:")
-    path = Path(rel)
-    if not path.is_absolute():
-        path = settings.root / path
+    candidate = Path(rel)
+    if not rel or candidate.is_absolute() or rel.startswith(("/", "\\")):
+        raise ValueError("local: path must be relative to the repository")
+    root = settings.root.resolve()
+    path = (root / rel).resolve()
+    try:
+        path.relative_to(root)
+    except ValueError as exc:
+        raise ValueError(f"local: path escapes the repository: {rel}") from exc
+    if not path.is_file():
+        raise ValueError(f"local: not a file: {rel}")
     return path
+
+
+def _http_get(url: str, timeout: float) -> bytes:
+    assert_allowed_url(url)
+    headers = {"User-Agent": "public-control-atlas/0.1 (+https://github.com/Liticode/NIST-Infosec-KB)"}
+    current = url
+    with httpx.Client(timeout=timeout, follow_redirects=False, headers=headers) as client:
+        for _ in range(MAX_REDIRECTS):
+            assert_allowed_url(current)
+            response = client.get(current)
+            if response.is_redirect:
+                current = resolve_redirect(str(response.url), response.headers.get("location") or "")
+                continue
+            response.raise_for_status()
+            return response.content
+    raise ValueError(f"too many redirects fetching {url}")
 
 
 def load_source(settings: Settings, url: str, timeout: float = 60.0) -> bytes:
     if url.startswith("local:"):
         return resolve_local(settings, url).read_bytes()
-    path = Path(url)
-    if path.exists():
-        return path.read_bytes()
     assert_allowed_url(url)
     settings.cache_dir.mkdir(parents=True, exist_ok=True)
     dest = cache_path(settings.cache_dir, url)
     if dest.exists():
         return dest.read_bytes()
-    headers = {"User-Agent": "public-control-atlas/0.1 (+https://github.com/Liticode/NIST-Infosec-KB)"}
-    with httpx.Client(timeout=timeout, follow_redirects=True, headers=headers) as client:
-        response = client.get(url)
-        response.raise_for_status()
-        dest.write_bytes(response.content)
-        return response.content
+    body = _http_get(url, timeout)
+    dest.write_bytes(body)
+    return body
 
 
 def load_json(settings: Settings, url: str) -> dict | list:
